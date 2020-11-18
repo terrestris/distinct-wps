@@ -20,6 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.*;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.config.GeoServer;
 import org.geoserver.security.decorators.ReadOnlyDataStore;
@@ -31,6 +38,7 @@ import org.geotools.data.FeatureSource;
 import org.geotools.data.postgis.PostGISDialect;
 import org.geotools.filter.text.ecql.ECQL;
 import org.geotools.jdbc.JDBCDataStore;
+import org.geotools.jdbc.VirtualTable;
 import org.geotools.process.factory.DescribeParameter;
 import org.geotools.process.factory.DescribeProcess;
 import org.geotools.process.factory.DescribeResult;
@@ -43,10 +51,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @DescribeProcess(
     title = "distinctValues",
@@ -84,7 +92,12 @@ public class DistinctValues implements GeoServerProcess {
             name = "filter",
             description = "An optional CQL filter to apply.",
             min = 0
-        ) final String filter
+        ) final String filter,
+        @DescribeParameter(
+            name = "viewParams",
+            description = "Optional view params.",
+            min = 0
+        ) final String viewParams
     ) throws JsonProcessingException, SQLException {
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -113,13 +126,20 @@ public class DistinctValues implements GeoServerProcess {
                 return error("Store is not a JDBC data store.");
             }
             JDBCDataStore dataStore = (JDBCDataStore) store;
+            Map<String, VirtualTable> virtualTables = dataStore.getVirtualTables();
             conn = dataStore.getDataSource().getConnection();
-            String sql = String.format("select distinct(%s) from %s ", propertyName, tableName);
+            String sql;
+            if (virtualTables.size() > 0) {
+                sql = getModifiedSql(virtualTables.get(tableName), viewParams, propertyName);
+            } else {
+                sql = String.format("select distinct(%s) from %s ", propertyName, tableName);
+            }
             if (filter != null) {
                 Filter parsedFilter = ECQL.toFilter(filter);
                 String where = new PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter);
                 sql += where;
             }
+            LOGGER.fine("Using SQL: " + sql);
 
             stmt = conn.prepareStatement(sql);
             rs = stmt.executeQuery();
@@ -134,7 +154,6 @@ public class DistinctValues implements GeoServerProcess {
         } catch (Exception e) {
             LOGGER.log(Level.FINE, "Error when getting distinct values: " + e.getMessage());
             LOGGER.log(Level.FINEST, "Stack trace:", e);
-            e.printStackTrace();
             return error("Error: " + e.getMessage());
         } finally {
             if (conn != null) {
@@ -147,6 +166,38 @@ public class DistinctValues implements GeoServerProcess {
                 rs.close();
             }
         }
+    }
+
+    private String getModifiedSql(VirtualTable virtualTable, String viewParams, String propertyName) throws JSQLParserException {
+        String sql = virtualTable.getSql();
+        if (viewParams != null) {
+            String[] params = viewParams.split(";");
+            for (String param : params) {
+                String[] parts = param.split(":");
+                sql = sql.replace("%" + parts[0] + "%", parts[1]);
+            }
+        }
+        Statement parse = CCJSqlParserUtil.parse(sql);
+        Select stmt = (Select) parse;
+        PlainSelect select = (PlainSelect) stmt.getSelectBody();
+        List<SelectItem> selectItems = select.getSelectItems();
+        selectItems = selectItems.stream().filter(item -> {
+            SelectExpressionItem expressionItem = (SelectExpressionItem) item;
+            Expression expression = expressionItem.getExpression();
+            Function func = new Function();
+            func.setName("DISTINCT");
+            ExpressionList list = new ExpressionList();
+            list.setExpressions(Collections.singletonList(expression));
+            func.setParameters(list);
+            expressionItem.setExpression(func);
+            if (expressionItem.getAlias() != null) {
+                return expressionItem.getAlias().getName().equals(propertyName);
+            } else {
+                return expressionItem.toString().equalsIgnoreCase(propertyName);
+            }
+        }).collect(Collectors.toList());
+        select.setSelectItems(selectItems);
+        return select.toString();
     }
 
     public final StringRawData error(String msg) throws JsonProcessingException {
