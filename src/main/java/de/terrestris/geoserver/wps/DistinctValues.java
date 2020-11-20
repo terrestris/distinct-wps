@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
@@ -35,7 +36,9 @@ import org.geoserver.wps.process.RawData;
 import org.geoserver.wps.process.StringRawData;
 import org.geotools.data.DataAccess;
 import org.geotools.data.FeatureSource;
+import org.geotools.data.jdbc.FilterToSQLException;
 import org.geotools.data.postgis.PostGISDialect;
+import org.geotools.filter.text.cql2.CQLException;
 import org.geotools.filter.text.ecql.ECQL;
 import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.jdbc.VirtualTable;
@@ -130,14 +133,14 @@ public class DistinctValues implements GeoServerProcess {
             conn = dataStore.getDataSource().getConnection();
             String sql;
             if (virtualTables.size() > 0) {
-                sql = getModifiedSql(virtualTables.get(tableName), viewParams, propertyName);
+                sql = getModifiedSql(virtualTables.get(tableName), viewParams, propertyName, filter);
             } else {
                 sql = String.format("select distinct(%s) from %s ", propertyName, tableName);
-            }
-            if (filter != null) {
-                Filter parsedFilter = ECQL.toFilter(filter);
-                String where = new PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter);
-                sql += where;
+                if (filter != null) {
+                    Filter parsedFilter = ECQL.toFilter(filter);
+                    String where = new PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter);
+                    sql += where;
+                }
             }
             LOGGER.fine("Using SQL: " + sql);
 
@@ -168,7 +171,7 @@ public class DistinctValues implements GeoServerProcess {
         }
     }
 
-    private String getModifiedSql(VirtualTable virtualTable, String viewParams, String propertyName) throws JSQLParserException {
+    private String getModifiedSql(VirtualTable virtualTable, String viewParams, String propertyName, String filter) throws JSQLParserException, CQLException, FilterToSQLException {
         String sql = virtualTable.getSql();
         if (viewParams != null) {
             String[] params = viewParams.split(";");
@@ -197,6 +200,14 @@ public class DistinctValues implements GeoServerProcess {
             }
         }).collect(Collectors.toList());
         select.setSelectItems(selectItems);
+        if (filter != null) {
+            Filter parsedFilter = ECQL.toFilter(filter);
+            String where = new PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter);
+            Expression expression = CCJSqlParserUtil.parseCondExpression(where.substring("WHERE".length()));
+            Expression oldWhere = select.getWhere();
+            AndExpression and = new AndExpression(oldWhere, expression);
+            select.setWhere(and);
+        }
         return select.toString();
     }
 
