@@ -78,7 +78,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         return try {
             val factory = JsonNodeFactory(false)
             val root = factory.arrayNode()
-            val tableName = layerName.split(":".toRegex()).toTypedArray()[1]
+            val tableName = layerName.split(":".toRegex())[1]
             val featureType =
                 geoServer.catalog.getFeatureTypeByName(layerName) ?: return error("Feature type not found.")
             val source = featureType.getFeatureSource(null, null) ?: return error("Source not found.")
@@ -136,9 +136,9 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
     ): String {
         var sql = virtualTable!!.sql
         if (viewParams != null) {
-            val params = viewParams.split(";".toRegex()).toTypedArray()
+            val params = viewParams.split(";".toRegex())
             for (param in params) {
-                val parts = param.split(":".toRegex()).toTypedArray()
+                val parts = param.split(":".toRegex())
                 sql = sql.replace("%" + parts[0] + "%", parts[1])
             }
         }
