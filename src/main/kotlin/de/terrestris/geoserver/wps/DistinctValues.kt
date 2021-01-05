@@ -42,6 +42,8 @@ import org.geotools.process.factory.DescribeParameter
 import org.geotools.process.factory.DescribeProcess
 import org.geotools.process.factory.DescribeResult
 import org.geotools.util.logging.Logging
+import org.springframework.web.util.UriComponentsBuilder
+import org.springframework.web.util.UriUtils
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -136,11 +138,16 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
     ): String {
         var sql = virtualTable!!.sql
         if (viewParams != null) {
-            val params = viewParams.split(";".toRegex())
+            val decoded = UriUtils.decode(viewParams, "UTF-8")
+            val params = decoded.split(";".toRegex())
             for (param in params) {
                 val parts = param.split(":".toRegex())
                 sql = sql.replace("%" + parts[0] + "%", parts[1])
             }
+        }
+        // replace default values in case they were not included in the request
+        virtualTable.parameterNames.forEach {
+            param -> sql = sql.replace("%$param%", virtualTable.getParameter(param).defaultValue)
         }
         val parse = CCJSqlParserUtil.parse(sql)
         val stmt = parse as Select
@@ -160,7 +167,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             } else {
                 return@filter expressionItem.toString().equals(propertyName, ignoreCase = true)
             }
-        }.collect(Collectors.toList<SelectItem>())
+        }.collect(Collectors.toList())
         select.selectItems = selectItems
         if (filter != null) {
             val parsedFilter = ECQL.toFilter(filter)
