@@ -5,14 +5,14 @@
     <groupId>de.terrestris.geoserver.wps</groupId>
     <artifactId>distinct-wps</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
     <name>WPS process to retrieve distinct table values</name>
 
     <scm>
         <url>https://github.com/terrestris/distinct-wps</url>
         <connection>scm:git:git@github.com:terrestris/distinct-wps.git</connection>
         <developerConnection>scm:git:git@github.com:terrestris/distinct-wps.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.1.1</tag>
     </scm>
 
     <repositories>
