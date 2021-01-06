@@ -42,7 +42,6 @@ import org.geotools.process.factory.DescribeParameter
 import org.geotools.process.factory.DescribeProcess
 import org.geotools.process.factory.DescribeResult
 import org.geotools.util.logging.Logging
-import org.springframework.web.util.UriComponentsBuilder
 import org.springframework.web.util.UriUtils
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -98,17 +97,20 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             val virtualTables = dataStore.virtualTables
             conn = dataStore.dataSource.connection
             var sql: String
-            if (virtualTables.isNotEmpty()) {
-                sql = getModifiedSql(virtualTables[tableName], viewParams, propertyName, filter)
+            val virtualTable = virtualTables[tableName]
+            if (virtualTables.isNotEmpty() && virtualTable != null) {
+                sql = getModifiedSql(virtualTable, viewParams, propertyName, filter)
+                LOGGER.fine("Modified SQL: $sql")
             } else {
-                sql = String.format("select distinct(%s) from %s ", propertyName, tableName)
+                sql = "select distinct($propertyName) from $tableName "
                 if (filter != null) {
-                    val parsedFilter = ECQL.toFilter(filter)
+                    val decoded = UriUtils.decode(filter, "UTF-8")
+                    val parsedFilter = ECQL.toFilter(decoded)
                     val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
                     sql += where
                 }
+                LOGGER.fine("Custom SQL: $sql")
             }
-            LOGGER.fine("Using SQL: $sql")
             stmt = conn.prepareStatement(sql)
             rs = stmt.executeQuery()
             while (rs.next()) {
@@ -119,7 +121,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             }
             success(root)
         } catch (e: Exception) {
-            LOGGER.log(Level.FINE, "Error when getting distinct values: " + e.message)
+            LOGGER.fine("Error when getting distinct values: " + e.message)
             LOGGER.log(Level.FINEST, "Stack trace:", e)
             error("Error: " + e.message)
         } finally {
@@ -131,12 +133,12 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
 
     @Throws(JSQLParserException::class, CQLException::class, FilterToSQLException::class)
     private fun getModifiedSql(
-        virtualTable: VirtualTable?,
+        virtualTable: VirtualTable,
         viewParams: String?,
         propertyName: String,
         filter: String?
     ): String {
-        var sql = virtualTable!!.sql
+        var sql = virtualTable.sql
         if (viewParams != null) {
             val decoded = UriUtils.decode(viewParams, "UTF-8")
             val params = decoded.split(";".toRegex())
@@ -163,14 +165,15 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             func.parameters = list
             expressionItem.expression = func
             if (expressionItem.alias != null) {
-                return@filter expressionItem.alias.name == propertyName
+                return@filter expressionItem.alias.name.equals(propertyName, ignoreCase = true)
             } else {
                 return@filter expressionItem.toString().equals(propertyName, ignoreCase = true)
             }
         }.collect(Collectors.toList())
         select.selectItems = selectItems
         if (filter != null) {
-            val parsedFilter = ECQL.toFilter(filter)
+            val decoded = UriUtils.decode(filter, "UTF-8")
+            val parsedFilter = ECQL.toFilter(decoded)
             val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
             val expression = CCJSqlParserUtil.parseCondExpression(where.substring("WHERE".length))
             val oldWhere = select.where
