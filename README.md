@@ -19,6 +19,7 @@ it will fail if not quoted with double quotes).
 * use `propertyName` to specify the column to retrieve the values for
 * optionally use `filter` to specify a CQL filter in order to add a filter
 * optionally use `viewParams` to specify filter values for SQL based feature types
+* optionally use `addQuotes` to enforce the enclosure of the `val` values in single quotes (if false or missing no quotes are added)
 
 The result will be a JSON array with objects like this:
 
@@ -30,3 +31,16 @@ The result will be a JSON array with objects like this:
   "val": "Second value",
   "dsp": "Second value"
 }]
+```
+
+With `addQuotes` set to true you will get:
+
+```json
+[{
+  "val": "'firstValue'",
+  "dsp": "firstValue"
+}, {
+  "val": "'Second value'",
+  "dsp": "Second value"
+}]
+```
