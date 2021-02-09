@@ -94,6 +94,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                 return error("Store is not a JDBC data store.")
             }
             val dataStore = store
+            val schema = dataStore.databaseSchema
             val virtualTables = dataStore.virtualTables
             conn = dataStore.dataSource.connection
             var sql: String
@@ -102,7 +103,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                 sql = getModifiedSql(virtualTable, viewParams, propertyName, filter)
                 LOGGER.fine("Modified SQL: $sql")
             } else {
-                sql = "select distinct($propertyName) from $tableName "
+                sql = "select distinct($propertyName) from $schema.$tableName "
                 if (filter != null) {
                     val decoded = UriUtils.decode(filter, "UTF-8")
                     val parsedFilter = ECQL.toFilter(decoded)
