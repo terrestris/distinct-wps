@@ -71,7 +71,12 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             description = "The property name to retrieve the values of."
         ) propertyName: String,
         @DescribeParameter(name = "filter", description = "An optional CQL filter to apply.", min = 0) filter: String?,
-        @DescribeParameter(name = "viewParams", description = "Optional view params.", min = 0) viewParams: String?
+        @DescribeParameter(name = "viewParams", description = "Optional view params.", min = 0) viewParams: String?,
+        @DescribeParameter(
+            name = "addQuotes",
+            description = "Optional flag to add single quotes to the values",
+            min = 0
+        ) addQuotes: Boolean?
     ): RawData {
         var conn: Connection? = null
         var stmt: PreparedStatement? = null
@@ -116,8 +121,12 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             rs = stmt.executeQuery()
             while (rs.next()) {
                 val node = factory.objectNode()
+                var value = rs.getString(1)
+                if (addQuotes != null && addQuotes) {
+                    value = "'$value'"
+                }
                 node.put("dsp", rs.getString(1))
-                node.put("val", rs.getString(1))
+                node.put("val", value)
                 root.add(node)
             }
             success(root)
