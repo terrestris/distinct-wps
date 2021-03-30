@@ -42,7 +42,6 @@ import org.geotools.process.factory.DescribeParameter
 import org.geotools.process.factory.DescribeProcess
 import org.geotools.process.factory.DescribeResult
 import org.geotools.util.logging.Logging
-import org.geotools.xml.xsi.XSISimpleTypes
 import org.springframework.web.util.UriUtils
 import java.sql.Connection
 import java.sql.PreparedStatement
