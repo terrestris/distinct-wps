@@ -110,7 +110,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             val virtualTable = virtualTables[tableName]
             if (virtualTables.isNotEmpty() && virtualTable != null) {
                 sql = getModifiedSql(virtualTable, viewParams, propertyName, filter)
-                LOGGER.fine("Modified SQL: $sql")
+                LOGGER.fine("Using virtual table...")
             } else {
                 sql = "select distinct($propertyName) from $schema.$tableName "
                 if (filter != null) {
@@ -119,7 +119,6 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                     val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
                     sql += where
                 }
-                LOGGER.fine("Custom SQL: $sql")
             }
             if (order != null && (order.toLowerCase() == "asc" || order.toLowerCase() == "desc")) {
                 sql += " ORDER BY $propertyName $order"
@@ -127,6 +126,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             if (limit != null) {
                 sql += " LIMIT $limit"
             }
+            LOGGER.fine("Final SQL: $sql")
             stmt = conn.prepareStatement(sql)
             rs = stmt.executeQuery()
             while (rs.next()) {
