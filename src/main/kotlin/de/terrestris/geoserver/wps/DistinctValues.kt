@@ -76,7 +76,10 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             name = "addQuotes",
             description = "Optional flag to add single quotes to the values",
             min = 0
-        ) addQuotes: Boolean?
+        ) addQuotes: Boolean?,
+        @DescribeParameter(name = "limit", description = "Optional limit of result", min = 0) limit: Int?,
+        @DescribeParameter(name = "order", description = "Optional order direction (ASC or DESC)", min = 0) order: String?,
+        @DescribeParameter(name = "type", description = "Optional type of result list", min = 0) type: String?
     ): RawData {
         var conn: Connection? = null
         var stmt: PreparedStatement? = null
@@ -106,7 +109,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             val virtualTable = virtualTables[tableName]
             if (virtualTables.isNotEmpty() && virtualTable != null) {
                 sql = getModifiedSql(virtualTable, viewParams, propertyName, filter)
-                LOGGER.fine("Modified SQL: $sql")
+                LOGGER.fine("Using virtual table...")
             } else {
                 sql = "select distinct($propertyName) from $schema.$tableName "
                 if (filter != null) {
@@ -115,13 +118,23 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                     val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
                     sql += where
                 }
-                LOGGER.fine("Custom SQL: $sql")
             }
+            if (order != null && (order.toLowerCase() == "asc" || order.toLowerCase() == "desc")) {
+                sql += " ORDER BY $propertyName $order"
+            }
+            if (limit != null) {
+                sql += " LIMIT $limit"
+            }
+            LOGGER.fine("Final SQL: $sql")
             stmt = conn.prepareStatement(sql)
             rs = stmt.executeQuery()
             while (rs.next()) {
                 val node = factory.objectNode()
                 var value = rs.getString(1)
+                if (type != null && type.toLowerCase() == "list") {
+                    root.add(factory.textNode(value))
+                    continue
+                }
                 if (addQuotes != null && addQuotes) {
                     value = "'$value'"
                 }
