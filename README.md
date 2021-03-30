@@ -13,6 +13,10 @@ a look at the Geoserver log files to see what might be the problem
 (for example, `start` is not a reserved word in Postgres, but parsing
 it will fail if not quoted with double quotes).
 
+## Download ##
+
+Download the latest version from [here](https://nexus.terrestris.de/#browse/browse:public:de%2Fterrestris%2Fgeoserver%2Fwps%2Fdistinct-wps).
+
 ## Inputs ##
 
 * use `layerName` to specify the qualified feature type name
