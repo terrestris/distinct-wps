@@ -20,8 +20,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import net.sf.jsqlparser.JSQLParserException
 import net.sf.jsqlparser.expression.Function
+import net.sf.jsqlparser.expression.Parenthesis
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList
+import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals
 import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.select.PlainSelect
 import net.sf.jsqlparser.statement.select.Select
@@ -85,6 +87,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         var stmt: PreparedStatement? = null
         var rs: ResultSet? = null
         return try {
+            var replacedPropertyName = propertyName
             val factory = JsonNodeFactory(false)
             val root = factory.arrayNode()
             val tableName = layerName.split(":".toRegex())[1]
@@ -119,7 +122,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                     sql += where
                 }
             }
-            if (order != null && (order.toLowerCase() == "asc" || order.toLowerCase() == "desc")) {
+            if (order != null && (order.lowercase() == "asc" || order.lowercase() == "desc")) {
                 sql += " ORDER BY $propertyName $order"
             }
             if (limit != null) {
@@ -131,7 +134,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             while (rs.next()) {
                 val node = factory.objectNode()
                 var value = rs.getString(1)
-                if (type != null && type.toLowerCase() == "list") {
+                if (type != null && type.lowercase() == "list") {
                     root.add(factory.textNode(value))
                     continue
                 }
@@ -161,6 +164,8 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         propertyName: String,
         filter: String?
     ): String {
+        var replacedPropertyName = propertyName
+        var actualFilter: String? = filter
         var sql = virtualTable.sql
         if (viewParams != null) {
             val decoded = UriUtils.decode(viewParams, "UTF-8")
@@ -188,16 +193,20 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             func.parameters = list
             expressionItem.expression = func
             if (expressionItem.alias != null) {
+                if (filter != null && expressionItem.alias.name.equals(propertyName, ignoreCase = true)) {
+                    replacedPropertyName = expression.toString()
+                }
                 return@filter expressionItem.alias.name.equals(propertyName, ignoreCase = true)
             } else {
                 return@filter expressionItem.toString().equals(propertyName, ignoreCase = true)
             }
         }.collect(Collectors.toList())
         select.selectItems = selectItems
-        if (filter != null) {
-            val decoded = UriUtils.decode(filter, "UTF-8")
+        if (actualFilter != null) {
+            val decoded = UriUtils.decode(actualFilter, "UTF-8")
             val parsedFilter = ECQL.toFilter(decoded)
-            val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
+            var where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
+            where = where.replace(propertyName, replacedPropertyName, ignoreCase = true)
             val expression = CCJSqlParserUtil.parseCondExpression(where.substring("WHERE".length))
             val oldWhere = select.where
             val and = AndExpression(oldWhere, expression)
