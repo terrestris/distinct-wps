@@ -20,10 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import net.sf.jsqlparser.JSQLParserException
 import net.sf.jsqlparser.expression.Function
-import net.sf.jsqlparser.expression.Parenthesis
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList
-import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals
 import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.select.PlainSelect
 import net.sf.jsqlparser.statement.select.Select
@@ -49,7 +47,6 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
-import java.util.*
 import java.util.logging.Level
 import java.util.stream.Collectors
 
@@ -66,7 +63,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         @DescribeParameter(
             name = "layerName",
             description = "The qualified name of the layer to retrieve the values from. The layer must be based on a " +
-                    "JDBC/postgres datastore and be based on a single table with a name equal to the layer name."
+                "JDBC/postgres datastore and be based on a single table with a name equal to the layer name."
         ) layerName: String,
         @DescribeParameter(
             name = "propertyName",
@@ -80,14 +77,17 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             min = 0
         ) addQuotes: Boolean?,
         @DescribeParameter(name = "limit", description = "Optional limit of result", min = 0) limit: Int?,
-        @DescribeParameter(name = "order", description = "Optional order direction (ASC or DESC)", min = 0) order: String?,
+        @DescribeParameter(
+            name = "order",
+            description = "Optional order direction (ASC or DESC)",
+            min = 0
+        ) order: String?,
         @DescribeParameter(name = "type", description = "Optional type of result list", min = 0) type: String?
     ): RawData {
         var conn: Connection? = null
         var stmt: PreparedStatement? = null
         var rs: ResultSet? = null
         return try {
-            var replacedPropertyName = propertyName
             val factory = JsonNodeFactory(false)
             val root = factory.arrayNode()
             val tableName = layerName.split(":".toRegex())[1]
@@ -96,13 +96,13 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             val source = featureType.getFeatureSource(null, null) ?: return error("Source not found.")
             var store = source.dataStore
             if (store !is JDBCDataStore && store !is ReadOnlyDataStore) {
-                return error("Store is not a JDBC data store.")
+                return error("""Store is not a JDBC data store: ${store.javaClass.canonicalName}""")
             }
             if (store is ReadOnlyDataStore) {
                 store = store.unwrap(JDBCDataStore::class.java)
             }
             if (store !is JDBCDataStore) {
-                return error("Store is not a JDBC data store.")
+                return error("""Potentially wrapped store is not a JDBC data store: ${store.javaClass.canonicalName}""")
             }
             val dataStore = store
             val schema = dataStore.databaseSchema
@@ -165,7 +165,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         filter: String?
     ): String {
         var replacedPropertyName = propertyName
-        var actualFilter: String? = filter
+        val actualFilter: String? = filter
         var sql = virtualTable.sql
         if (viewParams != null) {
             val decoded = UriUtils.decode(viewParams, "UTF-8")
@@ -176,8 +176,8 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             }
         }
         // replace default values in case they were not included in the request
-        virtualTable.parameterNames.forEach {
-            param -> sql = sql.replace("%$param%", virtualTable.getParameter(param).defaultValue)
+        virtualTable.parameterNames.forEach { param ->
+            sql = sql.replace("%$param%", virtualTable.getParameter(param).defaultValue)
         }
         val parse = CCJSqlParserUtil.parse(sql)
         val stmt = parse as Select
