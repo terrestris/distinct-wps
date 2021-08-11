@@ -53,6 +53,10 @@ import java.util.stream.Collectors
 @DescribeProcess(title = "distinctValues", description = "Gets the distinct values of a column.")
 class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
 
+    companion object {
+        private val LOGGER = Logging.getLogger(DistinctValues::class.java)
+    }
+
     private val objectMapper: ObjectMapper = ObjectMapper()
 
     @DescribeResult(name = "result", description = "The distinct values json.", primary = true)
@@ -183,6 +187,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         val stmt = parse as Select
         val select = stmt.selectBody as PlainSelect
         var selectItems = select.selectItems
+        val distinct = select.distinct
         selectItems = selectItems.stream().filter { item: SelectItem ->
             val expressionItem = item as SelectExpressionItem
             val expression = expressionItem.expression
@@ -191,7 +196,9 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             val list = ExpressionList()
             list.expressions = listOf(expression)
             func.parameters = list
-            expressionItem.expression = func
+            if (distinct == null) {
+                expressionItem.expression = func
+            }
             if (expressionItem.alias != null) {
                 if (filter != null && expressionItem.alias.name.equals(propertyName, ignoreCase = true)) {
                     replacedPropertyName = expression.toString()
@@ -212,6 +219,10 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             val and = AndExpression(oldWhere, expression)
             select.where = and
         }
+        // since most of the select items are cleared, we need to clear the order items as well
+        if (select.orderByElements != null) {
+            select.orderByElements.clear()
+        }
         return select.toString()
     }
 
@@ -226,10 +237,6 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
     @Throws(JsonProcessingException::class)
     fun success(dataset: JsonNode?): StringRawData {
         return StringRawData(objectMapper.writeValueAsString(dataset), "application/json")
-    }
-
-    companion object {
-        private val LOGGER = Logging.getLogger(DistinctValues::class.java)
     }
 
 }
