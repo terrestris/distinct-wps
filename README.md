@@ -1,6 +1,6 @@
 ## Get distinct property values ##
 
-A WPS that can be used to retrieve distinct property values directly
+A WPS for GeoServer that can be used to retrieve distinct property values directly
 from the DB. This works for PostGIS based layers and for layers based
 directly on a table. The table name and layer name must be identical,
 or the layer must be based on a custom SQL statement.
@@ -16,6 +16,15 @@ it will fail if not quoted with double quotes).
 ## Download ##
 
 Download the latest version from [here](https://nexus.terrestris.de/#browse/browse:public:de%2Fterrestris%2Fgeoserver%2Fwps%2Fdistinct-wps).
+
+## Installation ##
+
+Simply copy the WPS into the `WEB-INF/lib` directory where GeoServer
+is deployed. In some versions of GeoServer (also depending on which
+extensions are installed) you may have to also add the jackson-databind jar.
+First determine which version of jackson-core is used in your GeoServer
+version: in `WEB-INF/lib` there will be a .jar like `jackson-core-2.10.5.jar`.
+That means you need to download [jackson-databind-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.10.5).
 
 ## Inputs ##
 
