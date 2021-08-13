@@ -43,15 +43,15 @@
     </distributionManagement>
 
     <properties>
-        <geotools.version>25.1</geotools.version>
-        <geoserver.version>2.19.1</geoserver.version>
+        <geotools.version>25.2</geotools.version>
+        <geoserver.version>2.19.2</geoserver.version>
 
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
         <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
 
         <jackson.version>2.12.4</jackson.version>
-        <kotlin.version>1.5.20</kotlin.version>
+        <kotlin.version>1.5.21</kotlin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
@@ -217,7 +217,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>enforce-maven</id>
