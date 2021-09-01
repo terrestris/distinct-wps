@@ -25,7 +25,7 @@ extensions are installed) you may have to also add the jackson-databind jar as w
 First determine which version of jackson-core is used in your GeoServer
 version: in `WEB-INF/lib` there will be a .jar like `jackson-core-2.10.5.jar`.
 That means you need to download [jackson-databind-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.10.5)
-and [jackson-annotations-2.10.5.jar](https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.10.5/jackson-annotations-2.10.5.jar).
+and [jackson-annotations-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations/2.10.5).
 
 ## Inputs ##
 
