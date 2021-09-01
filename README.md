@@ -21,10 +21,11 @@ Download the latest version from [here](https://nexus.terrestris.de/#browse/brow
 
 Simply copy the WPS into the `WEB-INF/lib` directory where GeoServer
 is deployed. In some versions of GeoServer (also depending on which
-extensions are installed) you may have to also add the jackson-databind jar.
+extensions are installed) you may have to also add the jackson-databind jar as well as the jackson-annotations jar.
 First determine which version of jackson-core is used in your GeoServer
 version: in `WEB-INF/lib` there will be a .jar like `jackson-core-2.10.5.jar`.
-That means you need to download [jackson-databind-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.10.5).
+That means you need to download [jackson-databind-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.10.5)
+and [jackson-annotations-2.10.5.jar](https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.10.5/jackson-annotations-2.10.5.jar).
 
 ## Inputs ##
 
