@@ -43,20 +43,17 @@
     </distributionManagement>
 
     <properties>
-        <geotools.version>25.2</geotools.version>
-        <geoserver.version>2.19.2</geoserver.version>
+        <geotools.version>26.0</geotools.version>
+        <geoserver.version>2.20.0</geoserver.version>
 
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
         <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
 
-        <jackson.version>2.12.4</jackson.version>
-        <kotlin.version>1.5.21</kotlin.version>
+        <jackson.version>2.13.0</jackson.version>
+        <kotlin.version>1.5.31</kotlin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <downloadSources>true</downloadSources>
-        <downloadJavadocs>true</downloadJavadocs>
     </properties>
 
     <build>
@@ -101,7 +98,7 @@
             <plugin>
                 <groupId>org.jetbrains.dokka</groupId>
                 <artifactId>dokka-maven-plugin</artifactId>
-                <version>1.5.0</version>
+                <version>1.5.31</version>
                 <executions>
                     <execution>
                         <phase>pre-site</phase>
@@ -201,7 +198,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -277,7 +274,7 @@
         <dependency>
             <groupId>com.github.jsqlparser</groupId>
             <artifactId>jsqlparser</artifactId>
-            <version>4.1</version>
+            <version>4.2</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
