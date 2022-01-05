@@ -49,6 +49,7 @@ import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.logging.Level
 import java.util.stream.Collectors
+import kotlin.text.RegexOption.IGNORE_CASE
 
 @DescribeProcess(title = "distinctValues", description = "Gets the distinct values of a column.")
 class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
@@ -120,7 +121,9 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             } else {
                 sql = "select distinct($propertyName) from $schema.$tableName "
                 if (filter != null) {
-                    val decoded = UriUtils.decode(filter, "UTF-8")
+                    var decoded = UriUtils.decode(filter, "UTF-8")
+                    // workaround to sanitize incoming CQL wrt. null values (GeoServer/Tools doesn't like `= null`)
+                    decoded = decoded.replace(Regex("=\\s*null", IGNORE_CASE), "is null")
                     val parsedFilter = ECQL.toFilter(decoded)
                     val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
                     sql += where
@@ -210,7 +213,9 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         }.collect(Collectors.toList())
         select.selectItems = selectItems
         if (actualFilter != null) {
-            val decoded = UriUtils.decode(actualFilter, "UTF-8")
+            var decoded = UriUtils.decode(actualFilter, "UTF-8")
+            // workaround to sanitize incoming CQL wrt. null values (GeoServer/Tools doesn't like `= null`)
+            decoded = decoded.replace(Regex("=\\s*null", IGNORE_CASE), "is null")
             val parsedFilter = ECQL.toFilter(decoded)
             var where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
             where = where.replace(propertyName, replacedPropertyName, ignoreCase = true)
