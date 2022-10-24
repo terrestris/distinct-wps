@@ -43,9 +43,8 @@
     </distributionManagement>
 
     <properties>
-        <geotools.version>27.1</geotools.version>
+        <geotools.version>27.2</geotools.version>
         <geoserver.version>2.21.2</geoserver.version>
-
         <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
         <maven-assembly-plugin.version>3.4.2</maven-assembly-plugin.version>
