@@ -124,6 +124,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                     var decoded = UriUtils.decode(filter, "UTF-8")
                     // workaround to sanitize incoming CQL wrt. null values (GeoServer/Tools doesn't like `= null`)
                     decoded = decoded.replace(Regex("=\\s*null", IGNORE_CASE), "is null")
+                    LOGGER.fine("Parsing CQL: $decoded")
                     val parsedFilter = ECQL.toFilter(decoded)
                     val where = PostGISDialect(null).createFilterToSQL().encodeToString(parsedFilter)
                     sql += where
@@ -155,7 +156,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
             success(root)
         } catch (e: Exception) {
             LOGGER.fine("Error when getting distinct values: " + e.message)
-            LOGGER.log(Level.FINEST, "Stack trace:", e)
+            LOGGER.log(Level.FINE, "Stack trace:", e)
             error("Error: " + e.message)
         } finally {
             conn?.close()
@@ -186,6 +187,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
         virtualTable.parameterNames.forEach { param ->
             sql = sql.replace("%$param%", virtualTable.getParameter(param).defaultValue)
         }
+        LOGGER.fine("Selecting: $sql")
         val parse = CCJSqlParserUtil.parse(sql)
         val stmt = parse as Select
         val select = stmt.selectBody as PlainSelect
@@ -208,7 +210,7 @@ class DistinctValues(private val geoServer: GeoServer) : GeoServerProcess {
                 }
                 return@filter expressionItem.alias.name.equals(propertyName, ignoreCase = true)
             } else {
-                return@filter expressionItem.toString().equals(propertyName, ignoreCase = true)
+                return@filter expressionItem.toString().contains(propertyName, ignoreCase = true)
             }
         }.collect(Collectors.toList())
         select.selectItems = selectItems
