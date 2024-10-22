@@ -50,13 +50,11 @@
     <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
 
     <jackson.version>2.18.0</jackson.version>
-    <kotlin.version>2.0.21</kotlin.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <build>
-    <sourceDirectory>src/main/kotlin</sourceDirectory>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -113,23 +111,11 @@
         <version>${maven-compiler-plugin.version}</version>
         <executions>
           <execution>
-            <id>default-compile</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>default-testCompile</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
             <id>java-compile</id>
             <phase>compile</phase>
             <goals>
               <goal>compile</goal>
             </goals>
-            <configuration>
-              <source>11</source>
-              <target>11</target>
-            </configuration>
           </execution>
           <execution>
             <id>java-test-compile</id>
@@ -139,6 +125,10 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <source>17</source>
+          <target>17</target>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -162,32 +152,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
-        <executions>
-          <execution>
-            <id>compile</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>process-sources</phase>
-            <configuration>
-              <jvmTarget>1.8</jvmTarget>
-              <sourceDirs>
-                <sourceDir>src/main/kotlin</sourceDir>
-              </sourceDirs>
-            </configuration>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <goals>
-              <goal>test-compile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
@@ -198,18 +162,6 @@
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.10.1</version>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-              <doclint>none</doclint>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -274,11 +226,6 @@
       <groupId>com.github.jsqlparser</groupId>
       <artifactId>jsqlparser</artifactId>
       <version>5.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib</artifactId>
-      <version>${kotlin.version}</version>
     </dependency>
   </dependencies>
 
