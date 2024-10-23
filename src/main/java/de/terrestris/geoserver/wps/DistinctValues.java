@@ -121,15 +121,17 @@ public class DistinctValues implements GeoServerProcess {
       if (!(store instanceof JDBCDataStore) && !(store instanceof ReadOnlyDataStore)) {
         return error("Store is not a JDBC data store.");
       }
-      if (store instanceof ReadOnlyDataStore wrapper) {
+      if (store instanceof ReadOnlyDataStore) {
+        ReadOnlyDataStore wrapper = (ReadOnlyDataStore) store;
         if (wrapper.isWrapperFor(JDBCDataStore.class)) {
           store = wrapper.unwrap(JDBCDataStore.class);
         }
       }
       LOGGER.fine("Datastore type is " + store.getClass());
-      if (!(store instanceof JDBCDataStore dataStore)) {
+      if (!(store instanceof JDBCDataStore)) {
         return error("Store is not a JDBC data store.");
       }
+      JDBCDataStore dataStore = (JDBCDataStore) store;
       var schema = dataStore.getDatabaseSchema();
       var virtualTables = dataStore.getVirtualTables();
       conn = dataStore.getDataSource().getConnection();
