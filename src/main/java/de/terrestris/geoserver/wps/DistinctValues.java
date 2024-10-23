@@ -43,6 +43,7 @@ import org.geotools.process.factory.DescribeResult;
 import org.geotools.util.logging.Logging;
 import org.springframework.web.util.UriUtils;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -110,28 +111,12 @@ public class DistinctValues implements GeoServerProcess {
       var root = factory.arrayNode();
 
       var tableName = layerName.split(":")[1];
-      var featureType = geoServer.getCatalog().getFeatureTypeByName(layerName);
-      if (featureType == null) {
-        return error("Feature type not found.");
+      JDBCDataStore dataStore;
+      try {
+        dataStore = getDataStore(layerName);
+      } catch (DataStoreException e) {
+        return error(e.getMessage());
       }
-      // HBD: we really need to use the feature type info to get the store, in case of custom attribute
-      // configurations the feature source will not produce the correct data store
-      var info = featureType.getStore();
-      var store = info.getDataStore(null);
-      if (!(store instanceof JDBCDataStore) && !(store instanceof ReadOnlyDataStore)) {
-        return error("Store is not a JDBC data store.");
-      }
-      if (store instanceof ReadOnlyDataStore) {
-        ReadOnlyDataStore wrapper = (ReadOnlyDataStore) store;
-        if (wrapper.isWrapperFor(JDBCDataStore.class)) {
-          store = wrapper.unwrap(JDBCDataStore.class);
-        }
-      }
-      LOGGER.fine("Datastore type is " + store.getClass());
-      if (!(store instanceof JDBCDataStore)) {
-        return error("Store is not a JDBC data store.");
-      }
-      JDBCDataStore dataStore = (JDBCDataStore) store;
       var schema = dataStore.getDatabaseSchema();
       var virtualTables = dataStore.getVirtualTables();
       conn = dataStore.getDataSource().getConnection();
@@ -182,6 +167,42 @@ public class DistinctValues implements GeoServerProcess {
         rs.close();
       }
     }
+  }
+
+  private JDBCDataStore getDataStore(String layerName) throws IOException {
+    // HBD: In case of custom attribute configurations the feature source will not produce the correct data store.
+    // However, if NO custom attribute configurations are configured, the data store from the feature type itself
+    // seems to contain no virtual tables, producing wrong results. So this function will try to use the one
+    // returned from the feature source first, if that fails, the one from the feature type will be used.
+    var featureType = geoServer.getCatalog().getFeatureTypeByName(layerName);
+    if (featureType == null) {
+      throw new DataStoreException("Feature type not found.");
+    }
+    var source = featureType.getFeatureSource(null, null);
+    if (source == null) {
+      throw new DataStoreException("Source not found.");
+    }
+    var store = source.getDataStore();
+    if (store instanceof ReadOnlyDataStore) {
+      var readOnly = (ReadOnlyDataStore) store;
+      if (readOnly.isWrapperFor(JDBCDataStore.class)) {
+        return readOnly.unwrap(JDBCDataStore.class);
+      }
+    }
+    // try the feature type store
+    var info = featureType.getStore();
+    store = info.getDataStore(null);
+    if (store instanceof JDBCDataStore) {
+      return (JDBCDataStore) store;
+    }
+    if (store instanceof ReadOnlyDataStore) {
+      ReadOnlyDataStore wrapper = (ReadOnlyDataStore) store;
+      if (wrapper.isWrapperFor(JDBCDataStore.class)) {
+        return wrapper.unwrap(JDBCDataStore.class);
+      }
+    }
+    LOGGER.fine("Datastore type is " + store.getClass());
+    throw new DataStoreException("Store is not a JDBC data store.");
   }
 
   private String getModifiedSql(VirtualTable virtualTable, String viewParams, String propertyName, String filter) throws JSQLParserException, CQLException, FilterToSQLException {
