@@ -5,7 +5,7 @@
   <groupId>de.terrestris.geoserver.wps</groupId>
   <artifactId>distinct-wps</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.5-SNAPSHOT</version>
+  <version>1.0.4-CLOUD-SNAPSHOT</version>
   <name>WPS process to retrieve distinct table values</name>
 
   <scm>
@@ -43,31 +43,46 @@
   </distributionManagement>
 
   <properties>
-    <geotools.version>32.1</geotools.version>
-    <geoserver.version>2.26.1</geoserver.version>
-    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-    <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
+    <geotools.version>33.1</geotools.version>
+    <geoserver.version>2.27.1</geoserver.version>
+    <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+    <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
     <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
 
-    <jackson.version>2.18.2</jackson.version>
+    <jackson.version>2.19.0</jackson.version>
+
+    <!-- dependency versions for geoserver-cloud integration -->
+    <spring-boot.version>2.7.18</spring-boot.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <pluginManagement>
       <plugins>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.3</version>
+          <version>3.1.4</version>
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.3</version>
+          <version>3.1.4</version>
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
@@ -87,7 +102,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.5.3</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -126,8 +141,8 @@
           </execution>
         </executions>
         <configuration>
-          <source>11</source>
-          <target>11</target>
+          <source>21</source>
+          <target>21</target>
         </configuration>
       </plugin>
 
@@ -136,9 +151,9 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <version>${maven-assembly-plugin.version}</version>
         <configuration>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
+          <descriptors>
+            <descriptor>src/assembly/only-jsqlparser.xml</descriptor>
+          </descriptors>
           <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
@@ -161,7 +176,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.11.1</version>
+        <version>3.11.2</version>
       </plugin>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -186,6 +201,17 @@
   </build>
 
   <dependencies>
+    <!-- spring-boot dependency for geoserver cloud integration -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-to-slf4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-process</artifactId>
@@ -225,7 +251,7 @@
     <dependency>
       <groupId>com.github.jsqlparser</groupId>
       <artifactId>jsqlparser</artifactId>
-      <version>5.0</version>
+      <version>5.3</version>
     </dependency>
   </dependencies>
 

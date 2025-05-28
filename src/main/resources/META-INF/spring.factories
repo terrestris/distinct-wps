@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+de.terrestris.geoserver.autoconfigure.wps.WpsExtensionsAutoConfiguration

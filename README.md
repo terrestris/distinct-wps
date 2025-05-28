@@ -17,15 +17,28 @@ it will fail if not quoted with double quotes).
 
 Download the latest version from [here](https://nexus.terrestris.de/#browse/browse:public:de%2Fterrestris%2Fgeoserver%2Fwps%2Fdistinct-wps).
 
-## Installation ##
+## Installation in GeoServer Cloud
 
-Simply copy the WPS into the `WEB-INF/lib` directory where GeoServer
-is deployed. In some versions of GeoServer (also depending on which
-extensions are installed) you may have to also add the jackson-databind jar as well as the jackson-annotations jar.
-First determine which version of jackson-core is used in your GeoServer
-version: in `WEB-INF/lib` there will be a .jar like `jackson-core-2.10.5.jar`.
-That means you need to download [jackson-databind-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.10.5)
-and [jackson-annotations-2.10.5.jar](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations/2.10.5).
+GeoServer Cloud is distributed as Docker images with a pre-configured set of extensions.
+In order to install an additional extension, you need to mount the required resources, such
+as jar files, in the running containers and instruct the java launcher to use them.
+
+In docker-compose it'd be as easy as bind-mounting the WPS `myWPS.jar`
+on the wps container's `/opt/app/bin/BOOT-INF/lib/myWPS.jar`, but trying
+to do the same in Kubernetes would override all jars in that folder.
+
+The recommended way is to mount the jar files somewhere else
+(for example, in `/opt/app/plugins/`) and set the `JAVA_OPTS` environment variable to
+include this location, like in the following example:
+
+```
+  wps:
+    image: geoservercloud/geoserver-cloud-wps:1.1.0
+    environment:
+      JAVA_OPTS: "-cp /opt/app/bin:/opt/app/bin/BOOT-INF/lib/*:/opt/app/plugins/myWPS.jar"
+    volumes:
+      - ./myWPS.jar:/opt/app/plugins/myWPS.jar
+```
 
 ## Inputs ##
 
@@ -34,9 +47,6 @@ and [jackson-annotations-2.10.5.jar](https://mvnrepository.com/artifact/com.fast
 * optionally use `filter` to specify a CQL filter in order to add a filter (you need to URI-encode special chars)
 * optionally use `viewParams` to specify filter values for SQL based feature types
 * optionally use `addQuotes` to enforce the enclosure of the `val` values in single quotes (if false or missing no quotes are added)
-* optionally use `limit` to limit your results
-* optionally use `order` to order your results `ASC`ending or `DESC`ending
-* optionally use `type` to control the output format. Supported types currently are `ext` (the default) or a plain `list`
 
 The result will be a JSON array with objects like this:
 
@@ -65,7 +75,7 @@ With `addQuotes` set to true you will get:
 When using `type` set to `list` results will become a simple array.
 
 ## cURL example:
-`curl -X POST -F 'file=@req.xml' 'http://localhost:8080/geoserver/ows'`
+`curl -X POST -H "Content-Type: application/xml" --data-binary @req.xml http://localhost:9090/geoserver/wps`
 
 Contents of `req.xml`:
 ```
@@ -81,31 +91,7 @@ Contents of `req.xml`:
     <wps:Input>
       <ows:Identifier>propertyName</ows:Identifier>
       <wps:Data>
-        <wps:LiteralData>population</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>filter</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>geometrie IS NOT NULL</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>limit</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>5</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>order</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>DESC</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>type</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>list</wps:LiteralData>
+        <wps:LiteralData>scalerank</wps:LiteralData>
       </wps:Data>
     </wps:Input>
   </wps:DataInputs>
