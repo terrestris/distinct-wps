@@ -217,7 +217,7 @@ public class DistinctValues implements GeoServerProcess {
     }
     // replace default values in case they were not included in the request
     for (var param : virtualTable.getParameterNames()) {
-      sql = sql.replace("%$param%", virtualTable.getParameter(param).getDefaultValue());
+      sql = sql.replace("%" + param + "%", virtualTable.getParameter(param).getDefaultValue());
     }
     LOGGER.fine("Parsing SQL: " + sql);
     var select = (PlainSelect) CCJSqlParserUtil.parse(sql);
